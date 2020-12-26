@@ -6,79 +6,76 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
-import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import sample.DatabaseHandler;
 import sample.User;
+import sample.animations.Shake;
 
 import java.io.IOException;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class SignUpController {
-
-    @FXML
-    private TextField signUpName;
-
-    @FXML
-    private PasswordField password_field;
+public class Controller {
 
     @FXML
     private TextField login_field;
 
     @FXML
-    private TextField signUpLastName;
+    private PasswordField password_field;
 
     @FXML
-    private Button signUpButton;
+    private Button authSignInButton;
 
     @FXML
-    private TextField signUpCountry;
-
-    @FXML
-    private RadioButton maleRadioButton;
-
-    @FXML
-    private RadioButton femaleRadioButton;
-
-    @FXML
-    private ImageView homeButton;
+    private Button loginSignUpButton;
 
     @FXML
     void initialize() {
+        authSignInButton.setOnAction(event -> {
+            String loginText = login_field.getText().trim();
+            String loginPassword = password_field.getText().trim();
 
-        signUpButton.setOnAction(event -> {
-            signUpNewUser();
-            openNewScene("/sample/View/optionsPage.fxml");
+            if(!loginText.equals("") && !loginPassword.equals(""))
+                loginUser(loginText, loginPassword);
+            else
+                System.out.println("Login and/or password is/are empty");
+        });
+
+        loginSignUpButton.setOnAction(event -> {
+            openNewScene("/sample/View/signUp.fxml");
         });
     }
 
-    private void signUpNewUser() {
+    private void loginUser(String loginText, String loginPassword) {
         DatabaseHandler dbHandler = new DatabaseHandler();
+        User user = new User();
+        user.setUserName(loginText);
+        user.setPassword(loginPassword);
+        ResultSet result = dbHandler.getUser(user);
 
-        String firstName = signUpName.getText();
-        String lastName = signUpLastName.getText();
-        String userName = login_field.getText();
-        String password = password_field.getText();
-        String location = signUpCountry.getText();
-        String gender;
-        if(maleRadioButton.isSelected())
-            gender = "Male";
-        else
-            gender = "Female";
+        int counter = 0;
 
-        User user = new User(firstName, lastName, userName, password, location, gender);
+        while(true) {
+            try {
+                if (!result.next()) break;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            counter++;
+        }
 
-        try {
-            dbHandler.signUpUser(user);
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
+        if(counter >= 1) {
+            openNewScene("/sample/View/optionsPage.fxml");
+        } else {
+            Shake userLoginAnim = new Shake(login_field);
+            Shake userPassAnim = new Shake(password_field);
+            userLoginAnim.playAnim();
+            userPassAnim.playAnim();
         }
     }
-
     public void openNewScene(String window) {
-        signUpButton.getScene().getWindow().hide();
+        loginSignUpButton.getScene().getWindow().hide();
 
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(getClass().getResource(window));
